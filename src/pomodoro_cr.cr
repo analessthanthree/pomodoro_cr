@@ -19,15 +19,17 @@ module PomodoroCr
     @state : State
 
     def initialize()
-      @input = IO::FileDescriptor.from_stdio(0)
       @input_controller = Channel(Char?).new
-      @output_controller = Deque(NamedTuple(type: String, value: String)).new 10
+      @output_controller = Channel(NamedTuple(type: String, value: String)).new
 
       @refresh_period = (1.0/60.0).seconds
       @refresh_period = 1.seconds
       @time_remaining = 60.seconds
       @time = Time.instant
       @dt = 0.seconds
+
+      @input = IO::FileDescriptor.from_stdio(0)
+      @input.read_timeout = @refresh_period
 
       @state = State::PAUSE
 
@@ -77,17 +79,20 @@ module PomodoroCr
       c = ' '
       @input.raw do
         until c == 'q'
-          c = @input.read_char
-          @input_controller.send c
+          begin
+            c = @input.read_char
+            @input_controller.send c
+          rescue ex : IO::TimeoutError
+            @input_controller.send nil
+          end
         end
       end
     end
 
     def output_loop
       loop do
-        sleep @refresh_period
 
-        msg = @output_controller.shift?
+        msg = @output_controller.receive
         break if msg == {type: "quit", value: "true"}
 
         erase_reset_cursor
@@ -99,7 +104,7 @@ module PomodoroCr
       end
     end
 
-    # Blocks with @input_controller.receive, processes messages, add to queue, sleep, loop
+    # Blocks with @input_controller.receive, processes messages, send to output, loop
     def controller_loop
       loop do
         input = @input_controller.receive
@@ -114,13 +119,15 @@ module PomodoroCr
           msg = {type: "Configure", value: "true"}
         when 'q'
           msg = {type: "quit", value: "true"}
-          @output_controller.push msg
+          @output_controller.send msg
           @quit.send true
           break
+        when nil
+          msg = {type: "Nil", value: "nil"}
         else
           msg = {type: "Other", value: input.to_s}
         end
-        @output_controller.push msg
+        @output_controller.send msg
       end
     end
 
@@ -136,6 +143,7 @@ module PomodoroCr
     ensure
       disable_alt_screen
     end
+  end
 
   pomo = Pomodoro.new
   pomo.run
