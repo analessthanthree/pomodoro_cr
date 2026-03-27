@@ -1,0 +1,13 @@
+name: pomodoro_cr
+version: 0.1.0
+
+authors:
+  - your-name-here <your-email-here>
+
+targets:
+  pomodoro_cr:
+    main: src/pomodoro_cr.cr
+
+crystal: '>= 1.19.1'
+
+license: MIT
