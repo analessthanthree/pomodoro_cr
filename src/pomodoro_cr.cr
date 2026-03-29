@@ -19,11 +19,9 @@ module PomodoroCr
     @state : State
 
     def initialize()
-      @input_controller = Channel(Char?).new
-      @output_controller = Channel(NamedTuple(type: String, value: String)).new
 
       @refresh_period = (1.0/60.0).seconds
-      @refresh_period = 1.seconds
+      # @refresh_period = 1.seconds
       @time_remaining = 60.seconds
       @time = Time.instant
       @dt = 0.seconds
@@ -33,7 +31,7 @@ module PomodoroCr
 
       @state = State::PAUSE
 
-      @quit = Channel(Bool).new
+      @quit = false
 
     end
 
@@ -75,41 +73,20 @@ module PomodoroCr
       print "----------------------------------------------------------------------------\n\r"
     end
 
-    def input_loop
+    def run
       c = ' '
-      @input.raw do
-        until c == 'q'
-          begin
-            c = @input.read_char
-            @input_controller.send c
-          rescue ex : IO::TimeoutError
-            @input_controller.send nil
-          end
+      enable_alt_screen
+      @input.raw!
+      until @quit
+        # Read user input
+        c = begin
+          @input.read_char
+        rescue ex : IO::TimeoutError
+          nil
         end
-      end
-    end
 
-    def output_loop
-      loop do
-
-        msg = @output_controller.receive
-        break if msg == {type: "quit", value: "true"}
-
-        erase_reset_cursor
-        update_timer
-        print_header
-        print_timer
-        print_message msg
-        print_footer
-      end
-    end
-
-    # Blocks with @input_controller.receive, processes messages, send to output, loop
-    def controller_loop
-      loop do
-        input = @input_controller.receive
-
-        case input
+        # Process user input
+        case c
         when '\r'
           msg = {type: "Enter", value: "true"}
         when 's'
@@ -119,29 +96,25 @@ module PomodoroCr
           msg = {type: "Configure", value: "true"}
         when 'q'
           msg = {type: "quit", value: "true"}
-          @output_controller.send msg
-          @quit.send true
-          break
+          @quit = true
         when nil
           msg = {type: "Nil", value: "nil"}
         else
-          msg = {type: "Other", value: input.to_s}
+          msg = {type: "Other", value: c.to_s}
         end
-        @output_controller.send msg
+
+        # Output
+        erase_reset_cursor
+        update_timer
+        print_header
+        print_timer
+        print_message msg
+        print_footer
+
       end
-    end
-
-    def run
-      enable_alt_screen
-
-      spawn { input_loop }
-      spawn { output_loop }
-      spawn { controller_loop }
-
-      # Blocks main fiber until user quits
-      @quit.receive
     ensure
       disable_alt_screen
+      @input.cooked!
     end
   end
 
