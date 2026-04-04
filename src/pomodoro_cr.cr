@@ -147,12 +147,26 @@ module PomodoroCr
       print "Time Remaining: #{@time_remaining}\n\r"
     end
 
-    def print_message(msg : NamedTuple(type: String, value: String)?)
+    def print_message
+      # Craft msg based on state
+      msg = case @state
+      when .new_pomodoro?
+        "Enter to start"
+      when .work?
+        "LOL you're working loser"
+      when .new_short_break?
+        "Ready for a break already?"
+      when .short_break?
+        "Go make coffee or some shit"
+      when .new_long_break?
+        "Damn you really out here working, huh?"
+      when .long_break?
+        "Boop boop boop"
+      end
       print "Message: #{msg}\n\r"
     end
 
     def print_footer
-      # TODO: Behavior of Enter depends on the state
       print @@horizontal_line
       print "[Enter] #{@enter_action}    [s] skip    [q] quit    [c] configure\n\r"
       print @@horizontal_line
@@ -199,30 +213,13 @@ module PomodoroCr
           handle_user_input c
         end
 
-        # Craft msg based on state
-        case @state
-        when .new_pomodoro?
-          msg = {type: "New Pomodoro", value: "Enter to start"}
-        when .work?
-          msg = {type: "Work", value: "LOL you're working loser"}
-        when .new_short_break?
-          msg = {type: "New Short Break", value: "Ready for a break already?"}
-        when .short_break?
-          msg = {type: "Short Break", value: "Go make coffee or some shit"}
-        when .new_long_break?
-          msg = {type: "New Long Break", value: "Damn you really out here working, huh?"}
-        when .long_break?
-          msg = {type: "Long Break", value: "Boop boop boop"}
-        end
-
         update_timer
 
-        # Output
         erase_screen
         reset_cursor
         print_header
         print_timer
-        print_message msg
+        print_message
         print_footer
       end
     ensure
