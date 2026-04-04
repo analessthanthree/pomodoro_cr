@@ -18,6 +18,7 @@ module PomodoroCr
     property time_remaining : Time::Span
     property? paused : Bool
     @dt : Time::Span
+    @long_break_frequency : UInt8
 
     def initialize()
 
@@ -182,6 +183,68 @@ module PomodoroCr
       yield get_user_input
     end
 
+    def get_new_config(kind : String, unit : String)
+      print "New #{kind} duration (#{unit}): "
+      config = (gets chomp = true) || "nil"
+      config.to_u8
+    rescue ex
+      puts "#{ex}, try again..."
+      get_new_config kind, unit
+    end
+
+    def configure
+      erase_screen
+      reset_cursor
+      @input.cooked do
+        print @@horizontal_line
+        puts "Pomodoro configuration"
+        print @@horizontal_line
+
+        puts <<-CONFIG
+        Current configuration:
+          Work duration: #{@work_duration}
+          Short break duration: #{@short_break_duration}
+          Long break duration: #{@long_break_duration}
+          Long break frequency: #{@long_break_frequency}
+        CONFIG
+        print @@horizontal_line
+
+        work_duration = get_new_config("work", "minutes").minutes
+        short_break_duration = get_new_config("short break", "minutes").minutes
+        long_break_duration = get_new_config("long break", "minutes").minutes
+        long_break_frequency = get_new_config("long break frequency", "every N pomodoros")
+        print @@horizontal_line
+
+        puts <<-CONFIG
+        New configuration:
+          Work duration: #{work_duration}
+          Short break duration: #{short_break_duration}
+          Long break duration: #{long_break_duration}
+          Long break frequency: #{long_break_frequency}
+        CONFIG
+        print @@horizontal_line
+
+        puts "Accept new configuration?"
+        print "This will reset your current timer to the new time: [y/N]: "
+        if (gets chomp = true) == "y"
+          puts "Setting new configuration..."
+          @work_duration = work_duration
+          @short_break_duration = short_break_duration
+          @long_break_duration = long_break_duration
+          @long_break_frequency = long_break_frequency
+
+          case @state
+          when .work? then reset_timer @work_duration
+          when .short_break? then reset_timer @short_break_duration
+          when .long_break? then reset_timer @long_break_duration
+          end
+        else
+          puts "Discarding new configuration..."
+        end
+        sleep 1.seconds
+      end
+    end
+
     def handle_user_input(c : Char?)
       # Process user input
       case c
@@ -191,11 +254,10 @@ module PomodoroCr
       when 's'
         advance_state
       when 'c'
+        configure
       when 'q'
         @quit = true
-      when nil
       else
-        # Default behavior?
       end
     end
 
