@@ -1,10 +1,29 @@
 # pomodoro_cr
 
-TODO: Write a description here
+A pomodoro timer written in Crystal
+
+Features:
+- No `tput`, uses ANSI escape sequences to create a basic TUI
+- Snarky status messages (more coming soon...) to keep you on your toes
+- Configurable via yaml (coming soon), via CLI, or during runtime
+  - Pomodoro duration
+  - Short break duration
+  - Long break duration
+  - Long break frequency
+  - Status messages
+- Alert/BEL sound when time is up
+- Pausing and skipping supported
+
+What it's missing:
+- Test coverage lol
+- A fully featured TUI: no auto-resizing, no wrapping, etc.
+- Motivation to do work not included
 
 ## Installation
 
-TODO: Write installation instructions here
+- Clone this repo
+- `crystal build --release src/pomodoro_cr.cr`
+- Move, copy, or sym-link the resulting binary to your preferred `PATH` location (e.g. `~/.local/bin`)
 
 ## Usage
 
