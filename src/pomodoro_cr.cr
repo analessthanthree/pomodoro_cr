@@ -158,8 +158,34 @@ module PomodoroCr
       print @@horizontal_line
     end
 
+    def get_user_input
+      @input.read_char
+    rescue ex : IO::TimeoutError
+      nil
+    end
+
+    def get_user_input(&)
+      yield get_user_input
+    end
+
+    def handle_user_input(c : Char?)
+      # Process user input
+      case c
+      when '\r'
+        # Behavior of "Enter" depends on the state
+        handle_enter
+      when 's'
+        advance_state
+      when 'c'
+      when 'q'
+        @quit = true
+      when nil
+      else
+        # Default behavior?
+      end
+    end
+
     def run
-      c = ' '
       enable_alt_screen
       @input.raw!
       until @quit
@@ -169,26 +195,8 @@ module PomodoroCr
           advance_state
         end
 
-        # Read user input
-        c = begin
-          @input.read_char
-        rescue ex : IO::TimeoutError
-          nil
-        end
-
-        # Process user input
-        case c
-        when '\r'
-          # Behavior of "Enter" depends on the state
-          handle_enter
-        when 's'
-          advance_state
-        when 'c'
-        when 'q'
-          @quit = true
-        when nil
-        else
-          # Default behavior?
+        get_user_input do |c|
+          handle_user_input c
         end
 
         # Craft msg based on state
