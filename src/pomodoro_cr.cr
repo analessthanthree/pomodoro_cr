@@ -62,6 +62,10 @@ module PomodoroCr
       print "\e[H"
     end
 
+    def print_bell
+      print "\a"
+    end
+
     def update_timer
       @dt = Time.instant - @time
       @time_remaining -= @dt unless paused?
@@ -160,7 +164,10 @@ module PomodoroCr
       @input.raw!
       until @quit
 
-        advance_state if @time_remaining < 0.seconds
+        if @time_remaining < 0.seconds
+          print_bell
+          advance_state
+        end
 
         # Read user input
         c = begin
