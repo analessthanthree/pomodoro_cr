@@ -54,18 +54,18 @@ module PomodoroCr
       print "\e[?1049l"
     end
 
-    def update_timer
-      @dt = Time.instant - @time
-      @time_remaining -= @dt unless paused?
-      @time = Time.instant
-    end
-
     def erase_screen
       print "\e[2J"
     end
 
     def reset_cursor
       print "\e[H"
+    end
+
+    def update_timer
+      @dt = Time.instant - @time
+      @time_remaining -= @dt unless paused?
+      @time = Time.instant
     end
 
     def reset_timer(duration : Time::Span)
@@ -119,6 +119,15 @@ module PomodoroCr
       end
     end
 
+    def enter_action
+      case @state
+      when .new_pomodoro?, .new_short_break?, .new_long_break?
+        "start"
+      else
+        "pause/unpause"
+      end
+    end
+
     def print_header
       print @@horizontal_line
       print "Pomodoro Timer!\n\r"
@@ -136,16 +145,6 @@ module PomodoroCr
 
     def print_message(msg : NamedTuple(type: String, value: String)?)
       print "Message: #{msg}\n\r"
-    end
-
-    def enter_action
-      case @state
-      when .new_pomodoro?, .new_short_break?, .new_long_break?
-        "start"
-      else
-        "pause/unpause"
-      end
-
     end
 
     def print_footer
