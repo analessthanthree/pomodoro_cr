@@ -33,7 +33,7 @@ module PomodoroCr
       @paused = true
 
       @completed_work = 0
-      @long_break_frequency = 5
+      @long_break_frequency = 4
       @work_duration = 25.minutes
       @short_break_duration = 5.minutes
       @long_break_duration = 15.minutes
