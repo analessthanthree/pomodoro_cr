@@ -1,0 +1,30 @@
+---
+work_duration: 26
+short_break_duration: 6
+long_break_duration: 16
+long_break_frequency: 5
+messages:
+  new_pomodoro:
+  - np1
+  - np2
+  - np3
+  work:
+  - w1
+  - w2
+  - w3
+  new_short_break:
+  - nsb1
+  - nsb2
+  - nsb3
+  short_break:
+  - sb1
+  - sb2
+  - sb3
+  new_long_break:
+  - nlb1
+  - nlb2
+  - nlb3
+  long_break:
+  - lb1
+  - lb2
+  - lb3
