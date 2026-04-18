@@ -5,6 +5,8 @@ require "yaml"
 module PomodoroCr
 
   include ConfigHelper
+  class DefaultFileNotFound < Exception end
+  class FileNotFound < Exception end
 
   class Configuration
     property work_duration : Time::Span?
@@ -45,7 +47,6 @@ module PomodoroCr
       # De-nil the c_cli[:config_path] Path | Nil union type
       @config_path = c_cli[:config_path] || @@default_config_path
 
-      # TODO Add error handling for when default_config_path does not exist
       c_yaml = load_yaml_config @config_path
 
       @work_duration = c_cli[:work_duration] \
@@ -64,7 +65,16 @@ module PomodoroCr
 
     end
 
+    # TODO Error handling for when config loads incorrectly?
     def load_yaml_config(config_path : Path)
+      unless File.file? config_path
+        if config_path == @@default_config_path
+          raise DefaultFileNotFound.new
+        else
+          raise FileNotFound.new("Configuration file #{config_path} not found. Exiting...")
+        end
+      end
+
       c = Config.from_yaml(File.read config_path)
 
       wd : Time::Span? = nil
@@ -90,6 +100,17 @@ module PomodoroCr
         long_break_frequency: c[:long_break_frequency],
         messages: c[:messages]
       }
+    rescue ex : DefaultFileNotFound
+      {
+        work_duration: nil,
+        short_break_duration: nil,
+        long_break_duration: nil,
+        long_break_frequency: nil,
+        messages: nil
+      }
+    rescue ex : FileNotFound
+      puts ex
+      exit 1
     end
 
     def parse_cli_args
@@ -201,44 +222,6 @@ module PomodoroCr
       ! @long_break_frequency.nil? &&
       ! @messages.nil?
     end
-  end
-
-  class YAMLConfig < Configuration
-
-    class DefaultFileNotFound < Exception
-    end
-
-    # Default values
-    @@base_path = Path["~/.config/pomodoro_cr"].expand(home: true)
-    getter config_path : Path = @@base_path / "config.yaml"
-
-    # Load default config
-    def initialize(dummy : Nil)
-      raise DefaultFileNotFound.new unless File.file? @config_path
-      load_config @config_path
-    rescue ex : DefaultFileNotFound
-    end
-
-    # Load user defined config at config_path
-    def initialize(config_path : Path | String)
-      @config_path = Path[config_path]
-      load_config @config_path
-    end
-
-    def load_config(config_path : Path)
-      c = Config.from_yaml(File.read config_path)
-
-      wd = c[:work_duration]
-      sbd = c[:short_break_duration]
-      lbd = c[:long_break_duration]
-
-      @work_duration = wd.minutes if wd
-      @short_break_duration = sbd.minutes if sbd
-      @long_break_duration = lbd.minutes if lbd
-      @long_break_frequency = c[:long_break_frequency]
-      @messages = c[:messages]
-    end
-
   end
 
   # Defaults
