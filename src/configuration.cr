@@ -14,22 +14,23 @@ module PomodoroCr
     property messages : MotivationalMsgs?
 
     @@base_path : Path =  Path["~/.config/pomodoro_cr"].expand(home: true)
-    getter config_path : Path = @@base_path / "config.yaml"
+    @@default_config_path : Path = @@base_path / "config.yaml"
+    getter config_path : Path
 
-    def initialize(
-      *,
-      work_duration : Time::Span? = nil,
-      short_break_duration : Time::Span? = nil,
-      long_break_duration : Time::Span? = nil,
-      long_break_frequency : UInt8? = nil,
-      messages : MotivationalMsgs? = nil
-    )
-      @work_duration = work_duration
-      @short_break_duration = short_break_duration
-      @long_break_duration = long_break_duration
-      @long_break_frequency = long_break_frequency
-      @messages = messages
-    end
+    # def initialize(
+    #   *,
+    #   work_duration : Time::Span? = nil,
+    #   short_break_duration : Time::Span? = nil,
+    #   long_break_duration : Time::Span? = nil,
+    #   long_break_frequency : UInt8? = nil,
+    #   messages : MotivationalMsgs? = nil
+    # )
+    #   @work_duration = work_duration
+    #   @short_break_duration = short_break_duration
+    #   @long_break_duration = long_break_duration
+    #   @long_break_frequency = long_break_frequency
+    #   @messages = messages
+    # end
 
     def initialize
       # Default values
@@ -39,12 +40,56 @@ module PomodoroCr
       @long_break_frequency = 4
       @messages = DEFAULT_MESSAGES
 
-      cli_config = parse_cli_args
+      c_cli = parse_cli_args
 
-      # De-nil the cli_config[:config_path] Path | Nil union type
-      if config_path = cli_config[:config_path]
-        @config_path = config_path
+      # De-nil the c_cli[:config_path] Path | Nil union type
+      @config_path = c_cli[:config_path] || @@default_config_path
+
+      # TODO Add error handling for when default_config_path does not exist
+      c_yaml = load_yaml_config @config_path
+
+      @work_duration = c_cli[:work_duration] \
+      || c_yaml[:work_duration] \
+      || 25.minutes
+      @short_break_duration = c_cli[:short_break_duration] \
+      || c_yaml[:short_break_duration] \
+      || 5.minutes
+      @long_break_duration = c_cli[:long_break_duration] \
+      || c_yaml[:long_break_duration] \
+      || 15.minutes
+      @long_break_frequency = c_cli[:long_break_frequency] \
+      || c_yaml[:long_break_frequency] \
+      || 4_u8
+      # TODO Concat default_messages with those loaded from yaml
+
+    end
+
+    def load_yaml_config(config_path : Path)
+      c = Config.from_yaml(File.read config_path)
+
+      wd : Time::Span? = nil
+      sbd : Time::Span? = nil
+      lbd : Time::Span? = nil
+
+      wd = if (tmp = c[:work_duration])
+        tmp.minutes
       end
+
+      sbd = if (tmp = c[:short_break_duration])
+        tmp.minutes
+      end
+
+      lbd = if (tmp = c[:long_break_duration])
+        tmp.minutes
+      end
+
+      {
+        work_duration: wd,
+        short_break_duration: sbd,
+        long_break_duration: lbd,
+        long_break_frequency: c[:long_break_frequency],
+        messages: c[:messages]
+      }
     end
 
     def parse_cli_args
