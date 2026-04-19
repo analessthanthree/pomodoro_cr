@@ -19,29 +19,7 @@ module PomodoroCr
     @@default_config_path : Path = @@base_path / "config.yaml"
     getter config_path : Path
 
-    # def initialize(
-    #   *,
-    #   work_duration : Time::Span? = nil,
-    #   short_break_duration : Time::Span? = nil,
-    #   long_break_duration : Time::Span? = nil,
-    #   long_break_frequency : UInt8? = nil,
-    #   messages : MotivationalMsgs? = nil
-    # )
-    #   @work_duration = work_duration
-    #   @short_break_duration = short_break_duration
-    #   @long_break_duration = long_break_duration
-    #   @long_break_frequency = long_break_frequency
-    #   @messages = messages
-    # end
-
     def initialize
-      # Default values
-      @work_duration = 25.minutes
-      @short_break_duration = 5.minutes
-      @long_break_duration = 15.minutes
-      @long_break_frequency = 4
-      @messages = DEFAULT_MESSAGES
-
       c_cli = parse_cli_args
 
       # De-nil the c_cli[:config_path] Path | Nil union type
@@ -62,7 +40,6 @@ module PomodoroCr
       || c_yaml[:long_break_frequency] \
       || 4_u8
       @messages = concat_messages DEFAULT_MESSAGES, c_yaml[:messages]
-
     end
 
     def concat_messages(m1 : MotivationalMsgs, m2 : MotivationalMsgs?)
@@ -207,23 +184,6 @@ module PomodoroCr
       }
     end
 
-    # Merges self with another Configuration. Non-nil properties present in `new_config` override those found in self.
-    # Returns a new Configuration, i.e. leaves self untouched
-    def merge(new_config c : Configuration)
-      wd = c.work_duration || self.work_duration
-      sbd = c.short_break_duration || self.short_break_duration
-      lbd = c.long_break_duration || self.long_break_duration
-      lbf = c.long_break_frequency || self.long_break_frequency
-      msgs = c.messages || self.messages
-      Configuration.new(
-        work_duration: wd,
-        short_break_duration: sbd,
-        long_break_duration: lbd,
-        long_break_frequency: lbf,
-        messages: msgs
-      )
-    end
-
     # Ensure that work, short_break, long_break duration and long_break_frequency are all set
     def valid?
       ! @work_duration.nil? &&
@@ -233,21 +193,4 @@ module PomodoroCr
       ! @messages.nil?
     end
   end
-
-  # Defaults
-  default_config = Configuration.new
-
-  # Overrides
-  # cli_overrides = CLIConfig.new
-
-  # From config file
-  # yaml_config = YAMLConfig.new cli_overrides.config_path
-
-  # config = (default_config.merge yaml_config).merge cli_overrides
-
-  # pp default_config
-  # pp yaml_config
-  # pp cli_overrides
-  # pp config.valid?
-
 end
