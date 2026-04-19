@@ -13,7 +13,7 @@ module PomodoroCr
     property short_break_duration : Time::Span?
     property long_break_duration : Time::Span?
     property long_break_frequency : UInt8?
-    property messages : MotivationalMsgs?
+    property messages : MotivationalMsgs
 
     @@base_path : Path =  Path["~/.config/pomodoro_cr"].expand(home: true)
     @@default_config_path : Path = @@base_path / "config.yaml"
@@ -61,8 +61,18 @@ module PomodoroCr
       @long_break_frequency = c_cli[:long_break_frequency] \
       || c_yaml[:long_break_frequency] \
       || 4_u8
-      # TODO Concat default_messages with those loaded from yaml
+      @messages = concat_messages DEFAULT_MESSAGES, c_yaml[:messages]
 
+    end
+
+    def concat_messages(m1 : MotivationalMsgs, m2 : MotivationalMsgs?)
+      return m1 unless m2
+      m1.each_key do |k|
+        if (tmp = m2[k])
+          m1[k].as(Array(String)).concat tmp
+        end
+      end
+      m1
     end
 
     # TODO Error handling for when config loads incorrectly?
