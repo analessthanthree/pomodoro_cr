@@ -42,6 +42,10 @@ module PomodoroCr
       @messages = concat_messages DEFAULT_MESSAGES, c_yaml[:messages]
     end
 
+    # TODO define for easy printing
+    # def to_s(io)
+    # end
+
     def concat_messages(m1 : MotivationalMsgs, m2 : MotivationalMsgs?)
       return m1 unless m2
       m1.each_key do |k|
@@ -53,6 +57,7 @@ module PomodoroCr
     end
 
     # TODO Error handling for when config loads incorrectly?
+    # Handle YAML::ParseException
     def load_yaml_config(config_path : Path)
       unless File.file? config_path
         if config_path == @@default_config_path
@@ -100,6 +105,11 @@ module PomodoroCr
       exit 1
     end
 
+    # TODO Add a dump-config argument that dumps the loaded config as yaml
+    # e.g.: pomodoro_cr --dump-config > ~/.config/pomodoro_cr/config.yaml
+    # This should, in principle, create the default config if none exists
+    # TODO Add a --no-default-msgs option to only use user-defined messages.
+    # If there are no user defined messages in config.yaml, default to [""] for each message type
     def parse_cli_args
 
       work_duration : Time::Span? = nil
