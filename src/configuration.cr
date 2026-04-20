@@ -56,8 +56,6 @@ module PomodoroCr
       m1
     end
 
-    # TODO Error handling for when config loads incorrectly?
-    # Handle YAML::ParseException
     def load_yaml_config(config_path : Path)
       unless File.file? config_path
         if config_path == @@default_config_path
@@ -102,6 +100,9 @@ module PomodoroCr
       }
     rescue ex : FileNotFound
       puts ex
+      exit 1
+    rescue ex: YAML::ParseException
+      puts "Failed to correctly parse yaml file #{config_path}. Exiting..."
       exit 1
     end
 
