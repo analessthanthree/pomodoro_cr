@@ -39,7 +39,9 @@ module PomodoroCr
       @long_break_frequency = c_cli[:long_break_frequency] \
       || c_yaml[:long_break_frequency] \
       || 4_u8
-      @messages = concat_messages DEFAULT_MESSAGES, c_yaml[:messages]
+
+      messages = c_cli[:polite_messages] ? POLITE_MESSAGES : DEFAULT_MESSAGES
+      @messages = concat_messages messages, c_yaml[:messages]
 
       if c_cli[:dump_config]
         puts to_yaml
@@ -127,8 +129,6 @@ module PomodoroCr
       exit 1
     end
 
-    # TODO Add a --no-default-msgs option to only use user-defined messages.
-    # If there are no user defined messages in config.yaml, default to [""] for each message type
     def parse_cli_args
 
       work_duration : Time::Span? = nil
@@ -137,6 +137,7 @@ module PomodoroCr
       long_break_frequency : UInt8? = nil
       config_path : Path? = nil
       dump_config = false
+      polite_messages = false
 
       OptionParser.parse do |p|
         p.banner = "Usage: pomodoro_cr [opts]"
@@ -200,6 +201,12 @@ module PomodoroCr
         ) { dump_config = true}
 
         p.on(
+          "-p",
+          "--polite-messages",
+          "Use polite messages instead of the default snarky ones"
+        ) { polite_messages = true }
+
+        p.on(
           "-h",
           "--help",
           "Prints help message"
@@ -217,7 +224,8 @@ module PomodoroCr
         long_break_duration: long_break_duration,
         long_break_frequency: long_break_frequency,
         config_path: config_path,
-        dump_config: dump_config
+        dump_config: dump_config,
+        polite_messages: polite_messages
       }
     end
 

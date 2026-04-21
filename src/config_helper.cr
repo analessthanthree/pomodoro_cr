@@ -17,6 +17,15 @@ module ConfigHelper
     messages: MotivationalMsgs?
   )
 
+  POLITE_MESSAGES = {
+    new_pomodoro: ["Enter to start"],
+    work: ["Let's get to work!"],
+    new_short_break: ["Time for a short break."],
+    short_break: ["See you soon!"],
+    new_long_break: ["Time for a long break."],
+    long_break: ["See you soon!"]
+  }
+
   DEFAULT_MESSAGES =  {
     "new_pomodoro":  [
       "Enter to start",
