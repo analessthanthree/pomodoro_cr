@@ -3,7 +3,6 @@ require "./config_helper.cr"
 require "yaml"
 
 module PomodoroCr
-
   include ConfigHelper
   class DefaultFileNotFound < Exception end
   class FileNotFound < Exception end
@@ -28,17 +27,13 @@ module PomodoroCr
       c_yaml = load_yaml_config @config_path
 
       @work_duration = c_cli[:work_duration] \
-      || c_yaml[:work_duration] \
-      || 25.minutes
+      || c_yaml[:work_duration] || 25.minutes
       @short_break_duration = c_cli[:short_break_duration] \
-      || c_yaml[:short_break_duration] \
-      || 5.minutes
+      || c_yaml[:short_break_duration] || 5.minutes
       @long_break_duration = c_cli[:long_break_duration] \
-      || c_yaml[:long_break_duration] \
-      || 15.minutes
+      || c_yaml[:long_break_duration] || 15.minutes
       @long_break_frequency = c_cli[:long_break_frequency] \
-      || c_yaml[:long_break_frequency] \
-      || 4_u8
+      || c_yaml[:long_break_frequency] || 4_u8
 
       messages = c_cli[:polite_messages] ? POLITE_MESSAGES : DEFAULT_MESSAGES
       @messages = concat_messages messages, c_yaml[:messages]
@@ -72,7 +67,9 @@ module PomodoroCr
     def concat_messages(m1 : MotivationalMsgs, m2 : MotivationalMsgs?)
       return m1 unless m2
       m1.each_key do |k|
+        # De-nil the second set of messages using a tmp var
         if (tmp = m2[k])
+          # The first set of messages will always at least have a default value, so we explicitly tell the compiler that we can de-nil it
           m1[k].as(Array(String)).concat tmp
         end
       end
@@ -130,7 +127,6 @@ module PomodoroCr
     end
 
     def parse_cli_args
-
       work_duration : Time::Span? = nil
       short_break_duration : Time::Span? = nil
       long_break_duration : Time::Span? = nil
@@ -210,7 +206,10 @@ module PomodoroCr
           "-h",
           "--help",
           "Prints help message"
-        ) { puts p }
+        ) do
+          puts p
+          exit 0
+        end
 
         p.invalid_option do |flag|
           STDERR.puts "ERROR: #{flag} is not a valid option."
