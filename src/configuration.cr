@@ -40,11 +40,26 @@ module PomodoroCr
       || c_yaml[:long_break_frequency] \
       || 4_u8
       @messages = concat_messages DEFAULT_MESSAGES, c_yaml[:messages]
+
+      if c_cli[:dump_config]
+        puts to_yaml
+        exit 0
+      end
     end
 
     # TODO define for easy printing
     # def to_s(io)
     # end
+
+    def to_yaml
+      {
+        work_duration: @work_duration.as(Time::Span).minutes,
+        short_break_duration: @short_break_duration.as(Time::Span).minutes,
+        long_break_duration: @long_break_duration.as(Time::Span).minutes,
+        long_break_frequency: @long_break_frequency,
+        messages: @messages
+      }.to_yaml
+    end
 
     def concat_messages(m1 : MotivationalMsgs, m2 : MotivationalMsgs?)
       return m1 unless m2
@@ -106,9 +121,6 @@ module PomodoroCr
       exit 1
     end
 
-    # TODO Add a dump-config argument that dumps the loaded config as yaml
-    # e.g.: pomodoro_cr --dump-config > ~/.config/pomodoro_cr/config.yaml
-    # This should, in principle, create the default config if none exists
     # TODO Add a --no-default-msgs option to only use user-defined messages.
     # If there are no user defined messages in config.yaml, default to [""] for each message type
     def parse_cli_args
@@ -118,6 +130,7 @@ module PomodoroCr
       long_break_duration : Time::Span? = nil
       long_break_frequency : UInt8? = nil
       config_path : Path? = nil
+      dump_config = false
 
       OptionParser.parse do |p|
         p.banner = "Usage: pomodoro_cr [opts]"
@@ -175,6 +188,12 @@ module PomodoroCr
         end
 
         p.on(
+          "-d",
+          "--dump-config",
+          "Print working configuration to stdout and exit"
+        ) { dump_config = true}
+
+        p.on(
           "-h",
           "--help",
           "Prints help message"
@@ -191,7 +210,8 @@ module PomodoroCr
         short_break_duration: short_break_duration,
         long_break_duration: long_break_duration,
         long_break_frequency: long_break_frequency,
-        config_path: config_path
+        config_path: config_path,
+        dump_config: dump_config
       }
     end
 
