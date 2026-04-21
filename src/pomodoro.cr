@@ -1,3 +1,5 @@
+require "./configuration.cr"
+
 module PomodoroCr
   enum State
     NEW_POMODORO
@@ -15,7 +17,8 @@ module PomodoroCr
     property time_remaining : Time::Span
     property? paused : Bool
     @dt : Time::Span
-    @long_break_frequency : UInt8
+
+    @message : String
 
     def initialize()
 
@@ -28,17 +31,16 @@ module PomodoroCr
       @input = IO::FileDescriptor.from_stdio(0)
       @input.read_timeout = @refresh_period
 
+      @c = Configuration.new
+
       @state = State::NEW_POMODORO
+      @message = random_message @state
       @enter_action = "start"
       @paused = true
 
       @completed_work = 0
-      @long_break_frequency = 4
-      @work_duration = 25.minutes
-      @short_break_duration = 5.minutes
-      @long_break_duration = 15.minutes
 
-      reset_timer @work_duration
+      reset_timer @c.work_duration
 
       @quit = false
 
@@ -82,7 +84,7 @@ module PomodoroCr
       when .new_short_break? then State::SHORT_BREAK
       when .new_long_break? then State::LONG_BREAK
       when .work?
-        (@completed_work + 1) % @long_break_frequency == 0 ? State::NEW_LONG_BREAK : State::NEW_SHORT_BREAK
+        (@completed_work + 1) % @c.long_break_frequency == 0 ? State::NEW_LONG_BREAK : State::NEW_SHORT_BREAK
       else @state
       end
     end
@@ -90,23 +92,24 @@ module PomodoroCr
     # Actually advances the state
     def advance_state
       @state = next_state
+      @message = random_message @state
       @enter_action = enter_action
       case @state
       when .new_pomodoro?
         @paused = true
-        reset_timer @work_duration
+        reset_timer @c.work_duration
       when .work?
         @paused = false
       when .new_short_break?
         @completed_work += 1
         @paused = true
-        reset_timer @short_break_duration
+        reset_timer @c.short_break_duration
       when .short_break?
         @paused = false
       when .new_long_break?
         @completed_work += 1
         @paused = true
-        reset_timer @long_break_duration
+        reset_timer @c.long_break_duration
       when .long_break?
         @paused = false
       end
@@ -145,23 +148,15 @@ module PomodoroCr
       print "Time Remaining: #{@time_remaining}\n\r"
     end
 
+    def random_message(state : State)
+      name = state.to_s.downcase
+      messages = @c.messages[name].as(Array(String))
+      size = messages.size
+      messages[Random.rand(size-1)]
+    end
+
     def print_message
-      # Craft msg based on state
-      msg = case @state
-      when .new_pomodoro?
-        "Enter to start"
-      when .work?
-        "LOL you're working loser"
-      when .new_short_break?
-        "Ready for a break already?"
-      when .short_break?
-        "Go make coffee or some shit"
-      when .new_long_break?
-        "Damn you really out here working, huh?"
-      when .long_break?
-        "Boop boop boop"
-      end
-      print "Message: #{msg}\n\r"
+      print "Pomo Buddy Says: \"#{@message}\"\n\r"
     end
 
     def print_footer
@@ -196,44 +191,38 @@ module PomodoroCr
         print @@horizontal_line
         puts "Pomodoro configuration"
         print @@horizontal_line
-
-        puts <<-CONFIG
-        Current configuration:
-          Work duration: #{@work_duration}
-          Short break duration: #{@short_break_duration}
-          Long break duration: #{@long_break_duration}
-          Long break frequency: #{@long_break_frequency}
-        CONFIG
+        puts @c
         print @@horizontal_line
 
         work_duration = get_new_config("work", "minutes").minutes
         short_break_duration = get_new_config("short break", "minutes").minutes
         long_break_duration = get_new_config("long break", "minutes").minutes
         long_break_frequency = get_new_config("long break frequency", "every N pomodoros")
-        print @@horizontal_line
+        new_c = Configuration.new(
+          work_duration,
+          short_break_duration,
+          long_break_duration,
+          long_break_frequency,
+          @c.messages,
+          @c.config_path
+        )
 
-        puts <<-CONFIG
-        New configuration:
-          Work duration: #{work_duration}
-          Short break duration: #{short_break_duration}
-          Long break duration: #{long_break_duration}
-          Long break frequency: #{long_break_frequency}
-        CONFIG
         print @@horizontal_line
-
+        puts new_c
+        print @@horizontal_line
         puts "Accept new configuration?"
         print "This will reset your current timer to the new time: [y/N]: "
+
         if (gets chomp = true) == "y"
           puts "Setting new configuration..."
-          @work_duration = work_duration
-          @short_break_duration = short_break_duration
-          @long_break_duration = long_break_duration
-          @long_break_frequency = long_break_frequency
-
+          @c = new_c
           case @state
-          when .work? then reset_timer @work_duration
-          when .short_break? then reset_timer @short_break_duration
-          when .long_break? then reset_timer @long_break_duration
+          when .work?, .new_pomodoro?
+            reset_timer @c.work_duration
+          when .short_break?, .new_short_break?
+            reset_timer @c.short_break_duration
+          when .long_break?, .new_long_break?
+            reset_timer @c.long_break_duration
           end
         else
           puts "Discarding new configuration..."

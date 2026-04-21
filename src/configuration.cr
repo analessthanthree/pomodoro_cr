@@ -8,15 +8,25 @@ module PomodoroCr
   class FileNotFound < Exception end
 
   class Configuration
-    property work_duration : Time::Span?
-    property short_break_duration : Time::Span?
-    property long_break_duration : Time::Span?
-    property long_break_frequency : UInt8?
+    property work_duration : Time::Span
+    property short_break_duration : Time::Span
+    property long_break_duration : Time::Span
+    property long_break_frequency : UInt8
     property messages : MotivationalMsgs
 
     @@base_path : Path =  Path["~/.config/pomodoro_cr"].expand(home: true)
     @@default_config_path : Path = @@base_path / "config.yaml"
     getter config_path : Path
+
+    def initialize(
+      @work_duration : Time::Span,
+      @short_break_duration : Time::Span,
+      @long_break_duration : Time::Span,
+      @long_break_frequency : UInt8,
+      @messages : MotivationalMsgs,
+      @config_path : Path
+    )
+    end
 
     def initialize
       c_cli = parse_cli_args
