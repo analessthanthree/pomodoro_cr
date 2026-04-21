@@ -47,9 +47,15 @@ module PomodoroCr
       end
     end
 
-    # TODO define for easy printing
-    # def to_s(io)
-    # end
+    def to_s(io)
+      io << <<-CONFIG
+      Configuration:
+        Work Duration: #{@work_duration}
+        Short Break Duration: #{@short_break_duration}
+        Long Break Duration: #{@long_break_duration}
+        Long Break Frequency: #{@long_break_frequency}
+      CONFIG
+    end
 
     def to_yaml
       {
