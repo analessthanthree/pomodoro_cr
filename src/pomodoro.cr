@@ -194,6 +194,9 @@ module PomodoroCr
         puts @c
         print @@horizontal_line
 
+        print "Continue with re-configuration? [y/N] "
+        return unless (gets chomp = true) == "y"
+
         work_duration = get_new_config("work", "minutes").minutes
         short_break_duration = get_new_config("short break", "minutes").minutes
         long_break_duration = get_new_config("long break", "minutes").minutes
