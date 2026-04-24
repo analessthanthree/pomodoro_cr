@@ -4,8 +4,12 @@ require "yaml"
 
 module PomodoroCr
   include ConfigHelper
-  class DefaultFileNotFound < Exception end
-  class FileNotFound < Exception end
+
+  class DefaultFileNotFound < Exception
+  end
+
+  class FileNotFound < Exception
+  end
 
   class Configuration
     property work_duration : Time::Span
@@ -14,7 +18,7 @@ module PomodoroCr
     property long_break_frequency : UInt8
     property messages : MotivationalMsgs
 
-    @@base_path : Path =  Path["~/.config/pomodoro_cr"].expand(home: true)
+    @@base_path : Path = Path["~/.config/pomodoro_cr"].expand(home: true)
     @@default_config_path : Path = @@base_path / "config.yaml"
     getter config_path : Path
 
@@ -24,7 +28,7 @@ module PomodoroCr
       @long_break_duration : Time::Span,
       @long_break_frequency : UInt8,
       @messages : MotivationalMsgs,
-      @config_path : Path
+      @config_path : Path,
     )
     end
 
@@ -36,14 +40,10 @@ module PomodoroCr
 
       c_yaml = load_yaml_config @config_path
 
-      @work_duration = c_cli[:work_duration] \
-      || c_yaml[:work_duration] || 25.minutes
-      @short_break_duration = c_cli[:short_break_duration] \
-      || c_yaml[:short_break_duration] || 5.minutes
-      @long_break_duration = c_cli[:long_break_duration] \
-      || c_yaml[:long_break_duration] || 15.minutes
-      @long_break_frequency = c_cli[:long_break_frequency] \
-      || c_yaml[:long_break_frequency] || 4_u8
+      @work_duration = c_cli[:work_duration] || c_yaml[:work_duration] || 25.minutes
+      @short_break_duration = c_cli[:short_break_duration] || c_yaml[:short_break_duration] || 5.minutes
+      @long_break_duration = c_cli[:long_break_duration] || c_yaml[:long_break_duration] || 15.minutes
+      @long_break_frequency = c_cli[:long_break_frequency] || c_yaml[:long_break_frequency] || 4_u8
 
       messages = c_cli[:polite_messages] ? POLITE_MESSAGES : DEFAULT_MESSAGES
       @messages = concat_messages messages, c_yaml[:messages]
@@ -66,11 +66,11 @@ module PomodoroCr
 
     def to_yaml
       {
-        work_duration: @work_duration.as(Time::Span).minutes,
+        work_duration:        @work_duration.as(Time::Span).minutes,
         short_break_duration: @short_break_duration.as(Time::Span).minutes,
-        long_break_duration: @long_break_duration.as(Time::Span).minutes,
+        long_break_duration:  @long_break_duration.as(Time::Span).minutes,
         long_break_frequency: @long_break_frequency,
-        messages: @messages
+        messages:             @messages,
       }.to_yaml
     end
 
@@ -102,36 +102,36 @@ module PomodoroCr
       lbd : Time::Span? = nil
 
       wd = if (tmp = c[:work_duration])
-        tmp.minutes
-      end
+             tmp.minutes
+           end
 
       sbd = if (tmp = c[:short_break_duration])
-        tmp.minutes
-      end
+              tmp.minutes
+            end
 
       lbd = if (tmp = c[:long_break_duration])
-        tmp.minutes
-      end
+              tmp.minutes
+            end
 
       {
-        work_duration: wd,
+        work_duration:        wd,
         short_break_duration: sbd,
-        long_break_duration: lbd,
+        long_break_duration:  lbd,
         long_break_frequency: c[:long_break_frequency],
-        messages: c[:messages]
+        messages:             c[:messages],
       }
     rescue ex : DefaultFileNotFound
       {
-        work_duration: nil,
+        work_duration:        nil,
         short_break_duration: nil,
-        long_break_duration: nil,
+        long_break_duration:  nil,
         long_break_frequency: nil,
-        messages: nil
+        messages:             nil,
       }
     rescue ex : FileNotFound
       puts ex
       exit 1
-    rescue ex: YAML::ParseException
+    rescue ex : YAML::ParseException
       puts "Failed to correctly parse yaml file #{config_path}. Exiting..."
       exit 1
     end
@@ -152,7 +152,7 @@ module PomodoroCr
           "--work-duration DUR",
           "Work duration (minutes)"
         ) do |dur|
-            work_duration = dur.to_u8.minutes
+          work_duration = dur.to_u8.minutes
         rescue ex : ArgumentError
           puts "Error: Argument '#{dur}' must be a positive integer"
           exit 1
@@ -197,14 +197,14 @@ module PomodoroCr
           "--config-path PATH",
           "Path to YAML file containing YAML pomodoro configuration (default: ~/.config/pomodoro_cr/config.yaml)"
         ) do |path|
-            config_path = Path[path].expand(home: true)
+          config_path = Path[path].expand(home: true)
         end
 
         p.on(
           "-d",
           "--dump-config",
           "Print working configuration to stdout and exit"
-        ) { dump_config = true}
+        ) { dump_config = true }
 
         p.on(
           "-p",
@@ -228,23 +228,23 @@ module PomodoroCr
         end
       end
       return {
-        work_duration: work_duration,
+        work_duration:        work_duration,
         short_break_duration: short_break_duration,
-        long_break_duration: long_break_duration,
+        long_break_duration:  long_break_duration,
         long_break_frequency: long_break_frequency,
-        config_path: config_path,
-        dump_config: dump_config,
-        polite_messages: polite_messages
+        config_path:          config_path,
+        dump_config:          dump_config,
+        polite_messages:      polite_messages,
       }
     end
 
     # Ensure that work, short_break, long_break duration and long_break_frequency are all set
     def valid?
-      ! @work_duration.nil? &&
-      ! @short_break_duration.nil? &&
-      ! @long_break_duration.nil? &&
-      ! @long_break_frequency.nil? &&
-      ! @messages.nil?
+      !@work_duration.nil? &&
+        !@short_break_duration.nil? &&
+        !@long_break_duration.nil? &&
+        !@long_break_frequency.nil? &&
+        !@messages.nil?
     end
   end
 end

@@ -11,7 +11,6 @@ module PomodoroCr
   end
 
   class Pomodoro
-
     @@horizontal_line = "-" * 70 + "\n\r"
 
     property time_remaining : Time::Span
@@ -20,8 +19,7 @@ module PomodoroCr
 
     @message : String
 
-    def initialize()
-
+    def initialize
       @refresh_period = (1.0/60.0).seconds
       # @refresh_period = 1.seconds
       @time_remaining = 60.seconds
@@ -43,7 +41,6 @@ module PomodoroCr
       reset_timer @c.work_duration
 
       @quit = false
-
     end
 
     def enable_alt_screen
@@ -79,10 +76,10 @@ module PomodoroCr
     # Returns the next state, but does not change it
     def next_state
       return case @state
-      when .new_pomodoro? then State::WORK
+      when .new_pomodoro?              then State::WORK
       when .short_break?, .long_break? then State::NEW_POMODORO
-      when .new_short_break? then State::SHORT_BREAK
-      when .new_long_break? then State::LONG_BREAK
+      when .new_short_break?           then State::SHORT_BREAK
+      when .new_long_break?            then State::LONG_BREAK
       when .work?
         (@completed_work + 1) % @c.long_break_frequency == 0 ? State::NEW_LONG_BREAK : State::NEW_SHORT_BREAK
       else @state
@@ -120,7 +117,7 @@ module PomodoroCr
       when .new_pomodoro?, .new_short_break?, .new_long_break?
         advance_state
       else
-        @paused = ! paused?
+        @paused = !paused?
       end
     end
 
@@ -152,7 +149,7 @@ module PomodoroCr
       name = state.to_s.downcase
       messages = @c.messages[name].as(Array(String))
       size = messages.size
-      messages[Random.rand(size-1)]
+      messages[Random.rand(size - 1)]
     end
 
     def print_message
@@ -254,7 +251,6 @@ module PomodoroCr
       enable_alt_screen
       @input.raw!
       until @quit
-
         if @time_remaining < 0.seconds
           print_bell
           advance_state
